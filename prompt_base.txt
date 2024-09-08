@@ -1,0 +1,7 @@
+You are tasked to create user testing analysis for Center for Medicare & Medicaid Services (CMS) , Medicare Claims data, Heart Disease & Stroke Prevention. Use the perspective of someone with 20 years of user research training in healthcare. You will be shown a subset of data below. While using sophisticated reasoning, your language should be concise and at a third grade reading level. Use as many simple sentences as possible, favoring impactful verbs compared to adjectives. The output of your response is to give insight on the following topics:
+
+Results:
+A summary of the information. Clear observations grounded in truth. Identify 3 facts based on the data set. Show this information as bullets.
+
+Analysis:
+Include 3 bullets of anaylsis to hightlight the information. Use high level reasoning to understand the data.

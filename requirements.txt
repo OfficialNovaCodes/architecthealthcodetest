@@ -1,0 +1,5 @@
+Flask
+pandas
+sodapy
+python-dotenv
+openai

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Medicare Data on Google Maps</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        #map {
+            height: 800px;
+            width: 50%;
+            margin: 0 auto;
+            display: block;
+            float: left; /* Aligns map to the left */
+        }
+        #analysis {
+            width: 45%;
+            margin-left: 20px;
+            float: left; /* Align analysis to the right of the map */
+        }
+    </style>
+</head>
+<body>
+
+<h1>Mapping and Analysis for Heart Disease in the US from 2016-2021</h1>
+
+<!-- Filters -->
+<form id="filter-form">
+    <!-- State Dropdown -->
+    <label for="state">State:</label>
+    <select id="state" name="state">
+        <option value="">Select State</option>
+        <option value="AL">Alabama</option>
+        <option value="AK">Alaska</option>
+        <option value="AZ">Arizona</option>
+        <option value="AR">Arkansas</option>
+        <option value="CA">California</option>
+        <option value="CO">Colorado</option>
+        <option value="CT">Connecticut</option>
+        <option value="DE">Delaware</option>
+        <option value="FL">Florida</option>
+        <option value="GA">Georgia</option>
+        <option value="HI">Hawaii</option>
+        <option value="ID">Idaho</option>
+        <option value="IL">Illinois</option>
+        <option value="IN">Indiana</option>
+        <option value="IA">Iowa</option>
+        <option value="KS">Kansas</option>
+        <option value="KY">Kentucky</option>
+        <option value="LA">Louisiana</option>
+        <option value="ME">Maine</option>
+        <option value="MD">Maryland</option>
+        <option value="MA">Massachusetts</option>
+        <option value="MI">Michigan</option>
+        <option value="MN">Minnesota</option>
+        <option value="MS">Mississippi</option>
+        <option value="MO">Missouri</option>
+        <option value="MT">Montana</option>
+        <option value="NE">Nebraska</option>
+        <option value="NV">Nevada</option>
+        <option value="NH">New Hampshire</option>
+        <option value="NJ">New Jersey</option>
+        <option value="NM">New Mexico</option>
+        <option value="NY">New York</option>
+        <option value="NC">North Carolina</option>
+        <option value="ND">North Dakota</option>
+        <option value="OH">Ohio</option>
+        <option value="OK">Oklahoma</option>
+        <option value="OR">Oregon</option>
+        <option value="PA">Pennsylvania</option>
+        <option value="RI">Rhode Island</option>
+        <option value="SC">South Carolina</option>
+        <option value="SD">South Dakota</option>
+        <option value="TN">Tennessee</option>
+        <option value="TX">Texas</option>
+        <option value="UT">Utah</option>
+        <option value="VT">Vermont</option>
+        <option value="VA">Virginia</option>
+        <option value="WA">Washington</option>
+        <option value="WV">West Virginia</option>
+        <option value="WI">Wisconsin</option>
+        <option value="WY">Wyoming</option>
+    </select>
+
+    <!-- Year Dropdown -->
+    <label for="year">Year:</label>
+    <select id="year" name="year">
+        <option value="">Select Year</option>
+        <option value="2016">2016</option>
+        <option value="2017">2017</option>
+        <option value="2018">2018</option>
+        <option value="2019">2019</option>
+        <option value="2020">2020</option>
+        <option value="2021">2021</option>
+    </select>
+
+    <!-- Disease Dropdown -->
+    <label for="disease">Disease:</label>
+    <select id="disease" name="disease">
+        <option value="">Select a disease</option>
+        <option value="Acute Myocardial Infarction (Heart Attack)">Acute Myocardial Infarction (Heart Attack)</option>
+        <option value="Coronary Heart Disease">Coronary Heart Disease</option>
+        <option value="Diseases of the Heart (Heart Disease)">Diseases of the Heart (Heart Disease)</option>
+        <option value="Heart Failure">Heart Failure</option>
+        <option value="Major Cardiovascular Disease">Major Cardiovascular Disease</option>
+        <option value="Stroke">Stroke</option>
+    </select>
+
+    <button type="submit">Filter</button>
+</form>
+<!-- Google Map -->
+<div id="map"></div>
+
+<!-- Analysis Section -->
+<div id="analysis">
+    <h2>Analysis</h2>
+    <p id="analysis-text"></p>
+</div>
+
+<!-- Include Google Maps API with API key from Flask -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}" async defer></script>
+<script>
+let map;
+let markers = [];
+
+function initMap() {
+    // Set a default map center
+    map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 37.0902, lng: -95.7129 }, // Center of the US
+        zoom: 4 // Default zoom level
+    });
+    console.log("Map initialized");
+}
+
+// Function to add markers to the map
+function addMarker(lat, lng, info) {
+    console.log(`Adding marker at: ${lat}, ${lng} with info: ${info}`);
+    const position = { lat: lat, lng: lng };
+    const marker = new google.maps.Marker({
+        position: position,
+        map: map,
+        title: info
+    });
+    markers.push(marker); // Store the marker for future reference
+}
+
+// Function to clear all markers from the map
+function clearMarkers() {
+    console.log("Clearing all markers");
+    markers.forEach(marker => {
+        marker.setMap(null); // Properly remove markers from the map
+    });
+    markers = []; // Reset the marker list
+}
+
+// Handle form submission and API call
+$('#filter-form').submit(function (event) {
+    event.preventDefault();
+    var state = $('#state').val();
+    var year = $('#year').val();
+    var disease = $('#disease').val();
+
+    console.log(`Form submitted with state: ${state}, year: ${year}, disease: ${disease}`);
+
+    $.getJSON(`/api/medicare?state=${state}&year=${year}&disease=${disease}`, function (response) {
+        console.log("API response received:", response);
+        clearMarkers();
+
+        // Loop through the data and add markers for each geolocation
+        response.data.forEach(function (record) {
+            if (record.geolocation && record.geolocation.coordinates) {
+                var lng = parseFloat(record.geolocation.coordinates[0]);
+                var lat = parseFloat(record.geolocation.coordinates[1]);
+                addMarker(lat, lng, `${record.topic} in ${record.locationabbr}`);
+            } else {
+                console.warn("No geolocation data available for this record");
+            }
+        });
+
+        // Display analysis
+        if (response.analysis) {
+            console.log("Analysis received:", response.analysis);
+
+            // Format analysis
+            let formattedAnalysis = response.analysis
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold text wrapped in **
+                .replace(/### Results/g, '<h3>Results</h3>')       // Replace ### Results with <h3>
+                .replace(/### Analysis/g, '<h3>Analysis</h3>')     // Replace ### Analysis with <h3>
+                .replace(/\n/g, '<br>');  // Replace newlines with <br> for line breaks
+
+            $('#analysis-text').html(formattedAnalysis);
+        } else {
+            console.log("No analysis available");
+            $('#analysis-text').text('No analysis available for the selected criteria.');
+        }
+    }).fail(function () {
+        console.error("Error fetching data from the API");
+    });
+});
+
+// Initialize map on load
+window.onload = initMap;
+</script>
+
+</body>
+</html>
